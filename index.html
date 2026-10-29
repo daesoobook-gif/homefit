@@ -612,12 +612,13 @@ const HOW = {"의자에 앉았다 일어서기": {"how": ["의자 앞에 발을 
 // 근거·설계: ../운동정리_20261006/홈트_운동정리_v3.md (codex 검수 3회)
 // 단위 u: 'r' = 횟수, 's' = 초. side = 한쪽 기준(좌우 각각). 진행: 5세트(v9까진 3세트) 모두 채우면 다음엔 +2회(+5초, 최대까지), 최대인 날 다 채우면 다음 단계(최소부터)
 // v6: 너무 쉽다는 피드백 → 난이도 한 번에 맞추기(LEVELS)·증량 +2회·어려운 단계 추가(맨 끝에만 붙여 저장된 단계 번호가 안 바뀜)
+// v12: 고르는 건 운동 도구만 — 쉬는 시간도 동작마다 자동(성공하면 목표↑ → 쉬는 시간↓ → 다음 단계)
 // v11: 난이도 정리 — 맨몸 쉬운 앞 단계 빼기(FROM), Y-T-W 15~25회, 화면엔 [맨몸 / 덤벨] 고르기만
 // v10: 운동이 너무 많다 → 하루 5동작 × 5세트로 익숙해지기. 예전(7동작 × 3세트) 기록·진행 중 운동도 그대로 열림
 // v9: 아이폰 소리 — 무음 모드에서도 울리기(audioSession·<audio>), 운동 중 화면 켜 두기, 못 읽은 기록은 지우지 않고 따로 보관
 // v8: 또 너무 쉽다는 피드백 → 횟수 동작 최소 8회 → 10회. 예전 저장본의 8·9회 목표는 불러올 때 10회로 올림
-// v7: 덤벨(5kg 2개) — 설정을 켜면 dbSteps 가 있는 동작은 '_db' 단계표로(밴드보다 우선), dbOnly 동작(리버스 플라이)이 A데이에 추가. 쉬는 시간은 설정값(기본 45초)
-const REST_SEC = 45, REST_OPTS = [30, 45, 60, 90], STALE_MS = 6 * 3600e3, LAYOFF_GAP = 7, FAILS_TO_DROP = 3;
+// v7: 덤벨(5kg 2개) — 설정을 켜면 dbSteps 가 있는 동작은 '_db' 단계표로(밴드보다 우선), dbOnly 동작(리버스 플라이)이 A데이에 추가. (v12부터 쉬는 시간은 동작마다 자동)
+const REST_SEC = 45, REST_OPTS = [30, 45, 60, 90], RESTS = [60, 45, 30], REST_START = 60, REST_STEP = 15, STALE_MS = 6 * 3600e3, LAYOFF_GAP = 7, FAILS_TO_DROP = 3;
 const S_ = (n, u, min, max, t = '', side = false) => ({ n, u, min, max, t, side });
 const EX = {
   squat:  { name:'스쿼트', kind:'하체 · 양발', tip:'무릎은 아프지 않은 깊이까지만.', steps:[
@@ -632,7 +633,7 @@ const EX = {
     steps:[{ ...S_('엎드려 Y-T-W 들기','r',15,25,'자세·어깨 지구력용 — 진짜 당기기 대신은 아니에요'), om:8 }, S_('수건 로우 버티기','s',15,40,'숨 쉬며 7할 힘으로 — 진짜 당기기 대신은 아니에요')],
     dbName:'한 팔 덤벨 로우', dbTip:'등은 평평하게, 몸을 비틀지 말고 팔꿈치를 엉덩이 쪽으로.',
     dbSteps:[S_('한 팔 덤벨 로우','r',10,20,'의자에 한 손·한 무릎 짚고',true), S_('정지 한 팔 덤벨 로우','r',10,20,'위에서 2초 등 조이기',true), S_('천천히 한 팔 덤벨 로우','r',10,20,'3초 동안 내리기',true)] },
-  rfly:   { name:'리버스 플라이', kind:'등 위 · 어깨 뒤', tip:'어깨 뒤쪽은 작은 근육이라 5kg가 무거울 수 있어요. 1단계는 물병으로 익히고, 덤벨 단계가 무거우면 [쉽게]로 물병 단계로 돌아가요. 어깨가 귀 쪽으로 으쓱 올라가지 않게.', dbOnly:true, steps:[
+  rfly:   { name:'리버스 플라이', kind:'등 위 · 어깨 뒤', tip:'어깨 뒤쪽은 작은 근육이라 5kg가 무거울 수 있어요. 1단계는 물병으로 익히고, 덤벨 단계가 무거우면 3번 연속 못 채울 때 저절로 쉬운 쪽으로 돌아가요. 아프면 [아파요]를 눌러요. 어깨가 귀 쪽으로 으쓱 올라가지 않게.', dbOnly:true, steps:[
     S_('물병 리버스 플라이','r',10,20,'덤벨 대신 물병(500ml)이나 빈손으로'), S_('한 팔 리버스 플라이','r',10,15,'한 손은 의자 짚고',true), S_('숙여서 리버스 플라이','r',10,15,'양팔 같이'), S_('정지 리버스 플라이','r',10,15,'위에서 2초')] },
   plank:  { name:'플랭크', kind:'코어 · 앞', tip:'허리가 처지거나 꺾이지 않게, 엉덩이와 어깨가 일직선.', steps:[
     S_('데드버그','s',20,45), S_('무릎 플랭크','s',20,45), S_('플랭크','s',20,45), S_('플랭크 어깨 터치','r',10,15,'',true)] },
@@ -679,17 +680,21 @@ const keysOf = id => [id, ...(EX[id].band ? [id + '_band'] : []), ...(EX[id].dbS
 const planIds = (type, db) => PLAN[type].filter(id => db || !EX[id].dbOnly);   // v7: 덤벨 없으면 리버스 플라이 빠짐
 const oldMin = st => st.om ?? (st.u === 'r' && st.min === 10 && st.max === 15 ? 8 : st.min);   // v8: 예전(8~15회 시절) 저장 목표 인정 하한
 const estMin = (s, items) => { const sets = items.reduce((a, x) => a + (x.sets ? x.sets.length : SETS), 0), work = items.reduce((a, x) => a + (x.sets ? x.sets.length : SETS) * (x.u === 'r' ? x.target * 3 : x.target) * (x.side ? 2 : 1), 0);
-  return Math.round((work + (sets - 1) * restOf(s) + (items.length - 1) * 60) / 60 + 10); };   // v10: 준비·마무리 10분 포함
+  return Math.round((work + items.reduce((a, x) => a + (x.sets ? x.sets.length : SETS) * itemRest(s, x), 0) - (items.length ? itemRest(s, items.at(-1)) : 0)) / 60 + 10); };   // v10: 준비·마무리 10분 포함
 const restOf = s => (REST_OPTS.includes(s.settings.rest) ? s.settings.rest : REST_SEC);
+const legacyRest = s => Math.min(REST_START, restOf(s));   // v12: 예전 '쉬는 시간' 설정 → 동작별 시작값
+const restOfP = (s, p) => (RESTS.includes(p.rest) ? p.rest : legacyRest(s));
+const itemRest = (s, it) => (RESTS.includes(it.rest) ? it.rest : legacyRest(s));
 const stepUp = u => (u === 'r' ? 1 : 5);   // 낮출 때 단위(-2회 / -10초)
 const upBy = u => (u === 'r' ? 2 : 5);     // v6: 올릴 때(+2회 / +5초)
 function fresh(today) { return { v:1, startDate:today, settings:{ band:false, preg:false, db:false, rest:REST_SEC }, prog:{}, history:[], session:null, layoffAt:null }; }
 function progOf(s, id) {
   const k = keyOf(s, id), st = stepsOf(s, id);
   let p = s.prog[k];
-  if (!p) p = s.prog[k] = { step:lowOf(k), target:st[lowOf(k)].min, fails:0 };
+  if (!p) p = s.prog[k] = { step:lowOf(k), target:st[lowOf(k)].min, fails:0, rest:REST_START };
+  if (!RESTS.includes(p.rest)) p.rest = legacyRest(s);   // v12
   if (p.step >= st.length) p.step = st.length - 1;
-  if (p.step < lowOf(k)) { p.step = lowOf(k); p.target = st[p.step].min; p.fails = 0; }   // v11
+  if (p.step < lowOf(k)) { p.step = lowOf(k); p.target = st[p.step].min; p.fails = 0; p.rest = REST_START; }   // v11 · v12: 60초
   if (p.target < st[p.step].min && !s.settings.preg) p.target = st[p.step].min;   // v8: 최소가 올라간 단계(임신·출산 후 모드는 예전 목표 그대로)
   return p;
 }
@@ -697,7 +702,7 @@ const nextType = s => (s.session ? s.session.type : s.history.length && s.histor
 function plan(s, today) {
   const type = nextType(s), last = s.history.at(-1);
   return { type, gap:last ? daysBetween(last.date, today) : null,
-    items:planIds(type, s.settings.db).map(id => { const p = progOf(s, id), st = stepsOf(s, id)[p.step]; return { id, key:keyOf(s, id), step:p.step, target:p.target, u:st.u, side:st.side, name:st.n }; }) };
+    items:planIds(type, s.settings.db).map(id => { const p = progOf(s, id), st = stepsOf(s, id)[p.step]; return { id, key:keyOf(s, id), step:p.step, target:p.target, rest:p.rest, u:st.u, side:st.side, name:st.n }; }) };
 }
 function start(s, today, now) {
   const p = plan(s, today);
@@ -719,7 +724,7 @@ function tap(s, ok, today, now) {
   const nx = current(ss);
   if (!nx) { ss.rest = null; return { finished:finish(s, now) }; }
   const it = ss.items[nx.i];
-  const sec = restOf(s);
+  const sec = itemRest(s, ss.items[cur.i]);   // v12: 방금 한 동작의 쉬는 시간
   ss.rest = { end:now + sec * 1000, sec, label:nx.i !== cur.i ? `다음: ${nameOf(it.id, it.key)} — ${it.name}` : `${nameOf(it.id, it.key)} ${nx.k + 1}세트 준비` };
   return { ok, rest:ss.rest };
 }
@@ -740,24 +745,27 @@ function undo(s, now) {
 }
 const skipRest = s => { if (s.session?.rest) { s.session.rest = null; return true; } return false; };
 function restAgain(s, now) { const r = s.session?.rest; if (!r || isStale(s, now)) return false; s.session.rest = { ...r, end:now + r.sec * 1000 }; s.session.t = now; return true; }
-// 결과 → 다음 목표(고정 규칙). 반환: 'up' 횟수+ / 'next' 다음 단계 / 'top' 마지막 단계 최대 / 'same' 그대로 / 'down' 목표 낮춤 / 'back' 이전 단계 / 'pain' 한 단계 내림 / 'hold' 다 못 함(변화 없음)
+// 결과 → 다음 목표(고정 규칙). v12: 'faster' 쉬는 시간 줄임 / 'slower' 쉬는 시간 늘림. 반환: 'up' 횟수+ / 'next' 다음 단계 / 'top' 마지막 단계 최대 / 'same' 그대로 / 'down' 목표 낮춤 / 'back' 이전 단계 / 'pain' 한 단계 내림 / 'hold' 다 못 함(변화 없음)
 function judge(s, it) {
   const st = stepsByKey(it.key), p = s.prog[it.key] || (s.prog[it.key] = { step:it.step, target:it.target, fails:0 });
-  const lo = lowOf(it.key);
-  if (it.step < lo) { if (!it.pain && it.sets.includes(null)) return 'hold'; p.step = lo; p.target = st[lo].min; p.fails = 0; return 'floor'; }   // v11: 빠진 단계로 시작한 예전 운동 → 새 시작 단계로
-  if (it.pain) { p.step = Math.max(lo, it.step - 1); p.target = st[p.step].min; p.fails = 0; return 'pain'; }
+  const lo = lowOf(it.key), r = itemRest(s, it);
+  if (it.step < lo) { if (!it.pain && it.sets.includes(null)) return 'hold'; p.step = lo; p.target = st[lo].min; p.fails = 0; p.rest = REST_START; return 'floor'; }   // v11: 빠진 단계로 시작한 예전 운동 → 새 시작 단계로
+  if (it.pain) { p.step = Math.max(lo, it.step - 1); p.target = st[p.step].min; p.fails = 0; p.rest = REST_START; return 'pain'; }
   if (it.sets.includes(null)) return 'hold';
+  p.rest = r;   // v12(codex): 다 못 한 날(hold)은 쉬는 시간도 그대로
   if (it.sets.every(v => v === 'ok')) {
     p.fails = 0;
     if (s.settings.preg) return 'same';                                     // 임신·출산 후 모드: 자동으로 올리지 않음
     const cur = st[it.step];
     if (it.target < cur.max) { p.target = Math.max(cur.min, Math.min(cur.max, it.target + upBy(cur.u))); return 'up'; }   // v6: +2회, 최대에서 멈춤
-    if (it.step + 1 < st.length) { p.step = it.step + 1; p.target = st[p.step].min; return 'next'; }
+    if (r > RESTS.at(-1)) { p.target = cur.max; p.rest = r - REST_STEP; return 'faster'; }   // v12: 최대를 다 채우면 쉬는 시간부터 줄임
+    if (it.step + 1 < st.length) { p.step = it.step + 1; p.target = st[p.step].min; p.rest = REST_START; return 'next'; }
     p.target = cur.max; return 'top';
   }
   p.fails = (p.fails || 0) + 1;
   if (p.fails < FAILS_TO_DROP) return 'same';
   p.fails = 0;
+  if (r < REST_START) { p.rest = r + REST_STEP; return 'slower'; }   // v12: 3번 못 채우면 쉬는 시간부터 늘림
   const cur = st[it.step], dn = it.target - 2 * stepUp(cur.u);
   if (it.target > cur.min) { p.target = Math.max(cur.min, dn); return 'down'; }
   if (it.step > lo) { p.step = it.step - 1; const pv = st[p.step]; p.target = Math.max(pv.min, pv.max - 2 * stepUp(pv.u)); return 'back'; }
@@ -765,8 +773,8 @@ function judge(s, it) {
 }
 function finish(s, now) {
   const ss = s.session; if (!ss) return null;
-  const h = { id:now, date:ss.date, type:ss.type, items:ss.items.map(it => ({ id:it.id, key:it.key, name:it.name, step:it.step, target:it.target, u:it.u, side:it.side, sets:it.sets.slice(), pain:it.pain })) };
-  h.items.forEach((x, n) => { x.res = judge(s, ss.items[n]); const p = s.prog[x.key]; x.nextStep = p.step; x.nextTarget = p.target; });
+  const h = { id:now, date:ss.date, type:ss.type, items:ss.items.map(it => ({ id:it.id, key:it.key, name:it.name, step:it.step, target:it.target, rest:itemRest(s, it), u:it.u, side:it.side, sets:it.sets.slice(), pain:it.pain })) };
+  h.items.forEach((x, n) => { x.res = judge(s, ss.items[n]); const p = s.prog[x.key]; x.nextStep = p.step; x.nextTarget = p.target; x.nextRest = p.rest; });
   s.history.push(h); s.session = null; return h;
 }
 // 6시간 넘게 손 안 댄 운동: 누른 세트가 있으면 마감(빈 세트 = 안 함 → 그 동작은 변화 없음), 아무것도 안 눌렀으면 버림
@@ -785,6 +793,7 @@ function layoffEase(s, today) {
     const st = stepsByKey(k)[p.step];
     const to = Math.max(st.min, p.target - (st.u === 'r' ? 3 : 10));
     if (to < p.target) { ch.push({ k, from:p.target, to }); p.target = to; }
+    if (restOfP(s, p) < REST_START) { if (!ch.some(c => c.k === k)) ch.push({ k, from:p.target, to:p.target }); p.rest = REST_START; }   // v12
   }
   s.layoffAt = s.history.at(-1).date;
   return ch;
@@ -796,7 +805,7 @@ function setLevel(s, lv) {
   s.settings.rest = L.rest;
   for (const id of [...planIds('A', s.settings.db), ...planIds('B', s.settings.db)]) for (const k of [keyOf(s, id)]) {
     const st = stepsByKey(k), step = Math.min(Math.max(lowOf(k), L.step[k] ?? 0), st.length - 1);
-    s.prog[k] = { step, target:st[step].min, fails:0 };
+    s.prog[k] = { step, target:st[step].min, fails:0, rest:REST_START };
   }
   return true;
 }
@@ -804,7 +813,7 @@ const simplify = s => { s.settings.band = false; s.settings.preg = false;
   const ss = s.session;
   if (ss && !ss.order.length) s.session = null;
   else if (ss) ss.items = ss.items.map(it => (it.pain || it.sets.some(v => v !== null) || (!it.key.endsWith('_band') && it.step >= lowOf(it.key))) ? it
-    : (() => { const p = progOf(s, it.id), k = keyOf(s, it.id), st = stepsByKey(k)[p.step]; return { ...it, key:k, step:p.step, target:p.target, u:st.u, side:st.side, name:st.n }; })());
+    : (() => { const p = progOf(s, it.id), k = keyOf(s, it.id), st = stepsByKey(k)[p.step]; return { ...it, key:k, step:p.step, target:p.target, rest:p.rest, u:st.u, side:st.side, name:st.n }; })());
   const nx = s.session && s.session.rest && current(s.session);
   if (nx && nx.k === 0) { const it = s.session.items[nx.i]; s.session.rest.label = `다음: ${nameOf(it.id, it.key)} — ${it.name}`; }
   return s; };   // v11: 화면에서 뺀 설정(밴드·임신·출산 후 모드)은 끔
@@ -813,7 +822,7 @@ function setRest(s, sec) { if (!REST_OPTS.includes(sec) || s.session) return fal
 function setStep(s, id, delta) {   // 기타 탭에서 직접 쉽게/어렵게
   const st = stepsOf(s, id), p = progOf(s, id), to = p.step + delta;
   if (s.session || to < lowOf(keyOf(s, id)) || to >= st.length) return false;
-  p.step = to; p.target = st[to].min; p.fails = 0; return true;
+  p.step = to; p.target = st[to].min; p.fails = 0; p.rest = REST_START; return true;
 }
 // v2: 백업·저장본 검사 강화 — 깨진 값이면 받지 않는다(앱이 멈추지 않게)
 function validate(o) {
@@ -823,7 +832,7 @@ function validate(o) {
   const okKey = k => typeof k === 'string' && !!EX[baseId(k)] && Array.isArray(stepsByKey(k)) && (!k.endsWith('_band') || !!EX[baseId(k)].band);
   const okSets = a => Array.isArray(a) && (a.length === SETS || a.length === OLD_SETS) && a.every(v => v === null || v === 'ok' || v === 'fail');
   const okItem = (x, id) => x && typeof x === 'object' && x.id === id && okKey(x.key) && baseId(x.key) === id
-    && isInt(x.step, 0, stepsByKey(x.key).length - 1) && Number.isInteger(x.target) && x.target >= oldMin(stepsByKey(x.key)[x.step]) && x.target <= stepsByKey(x.key)[x.step].max && okSets(x.sets) && typeof x.pain === 'boolean';
+    && isInt(x.step, 0, stepsByKey(x.key).length - 1) && Number.isInteger(x.target) && x.target >= oldMin(stepsByKey(x.key)[x.step]) && x.target <= stepsByKey(x.key)[x.step].max && okSets(x.sets) && typeof x.pain === 'boolean' && (x.rest === undefined || RESTS.includes(x.rest));
   if (!o || typeof o !== 'object' || o.v !== 1) bad('홈트 기록 형식이 아닙니다');
   if (!o.settings || typeof o.settings.band !== 'boolean' || typeof o.settings.preg !== 'boolean') bad('설정 값이 올바르지 않습니다');
   if (o.settings.db === undefined) o.settings.db = false;   // v7: 예전 저장본엔 없음
@@ -835,10 +844,10 @@ function validate(o) {
     if (!okKey(k) || !p || typeof p !== 'object') bad(`단계 기록(${k})이 올바르지 않습니다`);
     const st = stepsByKey(k);
     if (isInt(p.step, 0, st.length - 1) && isInt(p.target, oldMin(st[p.step]), st[p.step].min - 1) && !o.settings.preg) p.target = st[p.step].min;   // v8: 예전 최소(8회) → 10회(임신·출산 후 모드는 그대로)
-    if (!isInt(p.step, 0, st.length - 1) || !Number.isInteger(p.target) || p.target < oldMin(st[p.step]) || p.target > st[p.step].max || !isInt(p.fails, 0, FAILS_TO_DROP)) bad(`단계 기록(${k}) 값이 범위를 벗어났습니다`);
+    if (!isInt(p.step, 0, st.length - 1) || !Number.isInteger(p.target) || p.target < oldMin(st[p.step]) || p.target > st[p.step].max || !isInt(p.fails, 0, FAILS_TO_DROP) || (p.rest !== undefined && !RESTS.includes(p.rest))) bad(`단계 기록(${k}) 값이 범위를 벗어났습니다`);
   }
   if (!Array.isArray(o.history)) bad('운동 기록이 올바르지 않습니다');
-  for (const h of o.history) if (!h || !isDate(h.date) || !PLAN[h.type] || !okList(h.items, h.type)) bad('운동 기록 중 올바르지 않은 항목이 있습니다');
+  for (const h of o.history) if (!h || !isDate(h.date) || !PLAN[h.type] || !okList(h.items, h.type) || !h.items.every(x => x.nextRest === undefined || RESTS.includes(x.nextRest))) bad('운동 기록 중 올바르지 않은 항목이 있습니다');
   if (o.layoffAt !== null && o.layoffAt !== undefined && !isDate(o.layoffAt)) bad('공백 기록 날짜가 올바르지 않습니다');
   const ss = o.session;
   if (ss !== null && ss !== undefined) {
@@ -849,7 +858,7 @@ function validate(o) {
   if (o.layoffAt === undefined) o.layoffAt = null;
   return o;
 }
-const Core = { FROM, lowOf, lvOf, simplify, setDb, estMin, LEVELS, setLevel, setRest, restOf, REST_OPTS, nameOf, tipOf, planIds, baseId, stepsByKey, EX, PLAN, SETS, REST_SEC, STALE_MS, LAYOFF_GAP, ymd, daysBetween, fresh, plan, start, current, tap, pain, undo, skipRest, restAgain, finish, closeStale, endNow, cancel, layoffEase, setStep, validate, progOf, stepsOf, keyOf, nextType, judge };
+const Core = { RESTS, REST_START, itemRest, restOfP, FROM, lowOf, lvOf, simplify, setDb, estMin, LEVELS, setLevel, setRest, restOf, REST_OPTS, nameOf, tipOf, planIds, baseId, stepsByKey, EX, PLAN, SETS, REST_SEC, STALE_MS, LAYOFF_GAP, ymd, daysBetween, fresh, plan, start, current, tap, pain, undo, skipRest, restAgain, finish, closeStale, endNow, cancel, layoffEase, setStep, validate, progOf, stepsOf, keyOf, nextType, judge };
 if (typeof module !== 'undefined') module.exports = Core;
 </script>
 
@@ -862,7 +871,7 @@ const mmss = sec => `${Math.floor(sec / 60)}:${String(Math.max(0, Math.round(sec
 const unitTxt = (u, side) => (u === 'r' ? '회' : '초') + (side ? ' · 한쪽' : '');
 let forceNext = false, S, tab = 'cal', dayDate = null, calYm = null, notice = '', muted = false, saveOk = true, holdEnd = null, lastTapAt = 0;
 function load() {
-  let raw = null; try { raw = localStorage.getItem(KEY); muted = localStorage.getItem(KEY + '_mute') === '1'; loud = localStorage.getItem(KEY + '_loud') !== '0'; } catch {}
+  let raw = null; try { raw = localStorage.getItem(KEY); muted = localStorage.getItem(KEY + '_mute') === '1'; /* v12: 무음에서도 울리기는 늘 켬 */ } catch {}
   try { const o = raw ? Core.validate(JSON.parse(raw)) : Core.fresh(today()), was = o.settings.band || o.settings.preg; S = Core.simplify(o);
     if (was) { notice = 'ℹ️ 업데이트로 밴드·임신·출산 후 모드 설정이 없어졌어요. 운동 도구는 홈에서 [맨몸 / 덤벨] 중에 골라요.' + (S.session ? ' 하던 운동은 이미 한 동작만 예전 그대로 이어서 해요.' : '') + ' 몸이 불편하면 쉬거나 의료진과 상의하세요.'; save(); } } catch (e) { S = Core.fresh(today()); brokenRaw = raw; let kept = false; try { if (raw) { const same = brokenKeys().find(k => localStorage.getItem(k) === raw), k = same || KEY + '_broken_' + Date.now(); if (!same) localStorage.setItem(k, raw); kept = localStorage.getItem(k) === raw; } } catch {} if (raw && !kept) noSave = true;   // v9(codex): 보관 못 했으면 원본을 덮어쓰지 않게 저장을 멈춤
     notice = `⚠️ 저장된 기록을 읽지 못했어요(${esc(e.message)}). ` + (kept ? '예전 기록은 지우지 않고 따로 보관해 뒀어요 — 기타 → 관리 → [못 읽은 기록 복사]로 꺼내 앱을 알려 준 사람에게 보내 주세요. 새 기록은 처음부터 시작해요.' : '예전 기록을 지키려고 이 화면에선 저장을 멈췄어요. 기타 → 관리 → [못 읽은 기록 복사]로 꺼내 둔 뒤 [처음부터 다시]를 누르면 다시 저장돼요.'); }
@@ -981,18 +990,18 @@ function viewDay() {
   }
   return viewWorkout();
 }
-const RES_TXT = { floor:'새 시작 단계로', up:'다음엔 목표 올림', next:'다음 단계로!', top:'최고 단계 완료', same:'다음에도 같은 목표', down:'목표를 조금 낮춤', back:'이전 단계로', pain:'한 단계 내림', hold:'다 못 해서 그대로' };
+const RES_TXT = { faster:'다음엔 쉬는 시간 줄임', slower:'다음엔 쉬는 시간 늘림', floor:'새 시작 단계로', up:'다음엔 목표 올림', next:'다음 단계로!', top:'최고 단계 완료', same:'다음에도 같은 목표', down:'목표를 조금 낮춤', back:'이전 단계로', pain:'한 단계 내림', hold:'다 못 해서 그대로' };
 function viewWorkout() {
   const back = '<button class="back" data-act="back">◀ 달력</button>';
   const last = S.history.at(-1);
   if (!S.session && last && last.date === today() && !forceNext) {   // v2: 오늘 운동을 끝냈으면 새로고침해도 완료 화면
-    return back + `<div class="card good"><h2>✅ 오늘 운동 끝 — 저장됨</h2><ul class="list">${last.items.map(x => `<li><b>${esc(Core.nameOf(x.id, x.key))}</b> ${x.target}${unitTxt(x.u, x.side)} — ${RES_TXT[x.res]}${x.res === 'up' || x.res === 'down' || x.res === 'same' ? ` (${x.nextTarget}${x.u === 'r' ? '회' : '초'})` : ''}</li>`).join('')}</ul><p class="dim">마무리 스트레칭 3분(허벅지 앞·뒤, 엉덩이, 가슴) 하고, 하루 쉬고 오세요. 걷기 같은 가벼운 유산소는 좋아요.</p><p class="dim">💾 기록은 이 폰에만 있어요. 가끔 기타 → 관리 → [백업 복사]로 메모장에 붙여 두면 폰을 바꿔도 이어서 할 수 있어요.</p><button class="small" data-act="forceNext">그래도 다음 운동 보기</button></div>`;
+    return back + `<div class="card good"><h2>✅ 오늘 운동 끝 — 저장됨</h2><ul class="list">${last.items.map(x => `<li><b>${esc(Core.nameOf(x.id, x.key))}</b> ${x.target}${unitTxt(x.u, x.side)} — ${RES_TXT[x.res]}${x.res === 'up' || x.res === 'down' || x.res === 'same' ? ` (${x.nextTarget}${x.u === 'r' ? '회' : '초'})` : x.res === 'faster' || x.res === 'slower' ? ` (${x.nextRest}초)` : ''}</li>`).join('')}</ul><p class="dim">마무리 스트레칭 3분(허벅지 앞·뒤, 엉덩이, 가슴) 하고, 하루 쉬고 오세요. 걷기 같은 가벼운 유산소는 좋아요.</p><p class="dim">💾 기록은 이 폰에만 있어요. 가끔 기타 → 관리 → [백업 복사]로 메모장에 붙여 두면 폰을 바꿔도 이어서 할 수 있어요.</p><button class="small" data-act="forceNext">그래도 다음 운동 보기</button></div>`;
   }
   const p = S.session ? null : Core.plan(S, today());
   const ss = S.session, items = ss ? ss.items : p.items.map(x => ({ ...x, sets:Array(Core.SETS).fill(null), pain:false }));
   const type = ss ? ss.type : p.type, cur = Core.current(ss || { items });
   let html = back + `<div class="card"><div class="row between"><h2>오늘 운동 <span class="badge">${type}데이</span></h2><span class="dim">${ss ? '진행 중' : '첫 세트를 누르면 시작'}</span></div>
-    ${!ss && p.gap !== null && p.gap >= Core.LAYOFF_GAP && S.layoffAt !== last?.date ? `<div class="card warn" style="margin-top:8px"><h2>${p.gap}일 만이에요</h2><p>오래 쉬었으니 목표를 조금 낮춰(횟수 -3, 초 -10) 시작할까요?</p><div class="row"><button class="primary" data-act="layoffYes" style="flex:1;width:auto">낮춰서 시작</button><button data-act="layoffNo" style="flex:1">그대로</button></div></div>` : ''}
+    ${!ss && p.gap !== null && p.gap >= Core.LAYOFF_GAP && S.layoffAt !== last?.date ? `<div class="card warn" style="margin-top:8px"><h2>${p.gap}일 만이에요</h2><p>오래 쉬었으니 목표를 조금 낮추고(횟수 -3, 초 -10) 쉬는 시간을 60초로 돌려 시작할까요?</p><div class="row"><button class="primary" data-act="layoffYes" style="flex:1;width:auto">낮춰서 시작</button><button data-act="layoffNo" style="flex:1">그대로</button></div></div>` : ''}
     <p class="dim">⏱ 예상 약 ${Core.estMin(S, items)}분 · ${items.length}동작 × ${items[0]?.sets.length || Core.SETS}세트 (쉬는 시간·준비·마무리 포함)</p>
     ${!ss ? '<p class="dim">먼저 준비운동 5분 — 제자리 걷기·팔 돌리기·고양이-소 자세·맨몸 굿모닝.</p>' : ''}
     ${S.settings.preg ? '<p class="acc-t">임신·출산 후 모드 — 목표가 자동으로 오르지 않아요. 출혈·어지럼·가슴 통증·심한 숨참·골반이나 배 통증이 있으면 바로 멈추세요.</p>' : ''}</div>`;
@@ -1005,7 +1014,7 @@ function viewWorkout() {
     <div class="dim" style="font-size:16px;color:var(--text)">${esc(stp.n)}${stp.t ? ` <span class="dim">· ${esc(stp.t)}</span>` : ''}</div>
     ${figHtml(stp.n, true)}
     <div class="w">${it.u === 's' && holding ? `<span id="holdNum">${Math.ceil((holdEnd - Date.now()) / 1000)}</span>` : it.target}<small>${it.u === 'r' ? '회' : '초'}</small></div>
-    <div class="dim">${it.sets.length}세트 · ${it.side ? '왼쪽·오른쪽 각각 · ' : ''}세트 사이 ${Core.restOf(S)}초 쉬어요</div>
+    <div class="dim">${it.sets.length}세트 · ${it.side ? '왼쪽·오른쪽 각각 · ' : ''}세트 사이 ${Core.itemRest(S, it)}초 쉬어요</div>
     <div class="dots">${it.sets.map((v, i) => `<span class="dot ${v || ''} ${i === cur.k ? 'now' : ''}">${i + 1}</span>`).join('')}</div>
     ${it.u === 's' ? `<button data-act="${holding ? 'holdStop' : 'holdStart'}" style="width:100%;margin-bottom:10px">${holding ? '⏹ 타이머 멈추기' : `▶ ${it.target}초 타이머 시작`}</button>` : ''}
     <div class="big2"><button class="done" data-act="done">✓ ${cur.k + 1}세트 완료</button><button class="fail" data-act="fail">✗ 못함</button></div>
@@ -1013,7 +1022,7 @@ function viewWorkout() {
     ${Core.tipOf(it.id, it.key) ? `<p class="dim">💡 ${esc(Core.tipOf(it.id, it.key))}</p>` : ''}
     <div class="row"><button data-act="how" data-name="${esc(stp.n)}" data-id="${it.id}" data-key="${it.key}" class="small">📖 자세 보기</button><button data-act="pain" class="small dangerb">아파요 (이 동작 그만)</button></div></div>`;
   html += `<div class="card"><ul class="list">${items.map((x, n) => `<li>${n === cur.i ? '▶ ' : ''}<b>${esc(Core.nameOf(x.id, x.key))}</b> — ${esc(x.name)} · ${x.target}${unitTxt(x.u, x.side)} ${x.pain ? '<span class="bad-t">아파요</span>' : `<span class="mini">${x.sets.map(v => `<i class="${v === 'ok' ? 'ok' : v === 'fail' ? 'fail' : 'none'}"></i>`).join('')}</span>`}</li>`).join('')}</ul>
-    <p class="dim">${it.sets.length}세트를 모두 채우면 다음엔 목표 +2회(버티기는 +5초). 목표가 최대(동작에 따라 10·15·20·25회)인 날 다 채우면 다음 단계로 올라가요.</p></div>`;
+    <p class="dim">${it.sets.length}세트를 모두 채우면 저절로 어려워져요: 목표 +2회(버티기 +5초) → 최대가 되면 쉬는 시간 60→45→30초 → 30초에서도 다 채우면 다음 단계(마지막 단계면 그대로 유지).</p></div>`;
   html += `<details class="card"><summary>취소</summary><div class="row" style="margin-top:8px"><button data-act="undo">↩︎ 방금 누른 것 취소</button>${ss ? '<button data-act="endNow">오늘은 여기까지(저장)</button><button class="dangerb" data-act="cancel">전체 취소(기록 안 남김)</button>' : ''}</div></details>`;
   return html;
 }
@@ -1021,23 +1030,20 @@ function viewEtc() {
   const ex = [...Core.planIds('A', S.settings.db), ...Core.planIds('B', S.settings.db)];
   return `<div class="card"><h2>설정</h2>
     <div><b>운동 도구</b>${gearHtml()}</div>
-    <div><b>세트 사이 쉬는 시간</b><br><span class="dim">45초부터 시작해요. 쉬우면 30초로 줄이고, 로우·데드리프트·불가리안처럼 힘든 동작에서 숨과 자세가 안 돌아오면 [한 번 더 쉬기]. 운동 중에는 못 바꿔요.</span>
-      <div class="rs">${Core.REST_OPTS.map(t => `<button data-act="rest" data-sec="${t}" class="${Core.restOf(S) === t ? 'on' : ''}">${t}초</button>`).join('')}</div></div>
-    <div class="row between"><span><b>무음 모드에서도 울리기</b><br><span class="dim">아이폰 옆 벨소리 스위치를 무음으로 두면 휴식 끝 소리가 안 나요. 켜 두면 무음이어도 울리게 해요([🔔 소리 시험]으로 확인해 보세요). 대신 듣던 음악이 멈출 수 있어요. 아이폰은 웹에서 진동이 안 돼요.</span></span><button data-act="toggleLoud" class="${loud ? 'warnb' : ''}">${loud ? '켜짐' : '꺼짐'}</button></div>
-    <div class="row"><button class="small" data-act="testBeep">🔔 소리 시험</button><span class="dim">안 들리면 위쪽 🔊 소리 켬인지, 폰 음량을 확인해요.</span></div>
+    <div class="row"><button class="small" data-act="testBeep">🔔 소리 시험</button><span class="dim">휴식 끝 소리는 무음 스위치여도 울려요(듣던 음악은 멈출 수 있어요). 안 들리면 위쪽 🔊 소리 켬인지, 폰 음량을 확인해요.</span></div>
   </div>
-  <div class="card"><h2>내 단계</h2><ul class="list">${ex.map(id => { const p = Core.progOf(S, id), st = Core.stepsOf(S, id), s = st[p.step]; return `<li><div class="row between"><span><b>${esc(Core.nameOf(id, Core.keyOf(S, id)))}</b> ${Core.lvOf(Core.keyOf(S, id), p.step)}단계 — ${esc(s.n)}<span class="k">목표 ${p.target}${unitTxt(s.u, s.side)}</span></span><span class="row"><button class="small" data-act="stepDown" data-id="${id}" aria-label="쉽게">쉽게</button><button class="small" data-act="stepUp" data-id="${id}" aria-label="어렵게">어렵게</button></span></div></li>`; }).join('')}</ul>
-    <p class="dim">직접 바꾸면 그 단계의 최소 목표부터 시작해요. 운동 중에는 바꿀 수 없어요.</p></div>
+  <div class="card"><h2>내 단계</h2><ul class="list">${ex.map(id => { const p = Core.progOf(S, id), st = Core.stepsOf(S, id), s = st[p.step]; return `<li><div class="row between"><span><b>${esc(Core.nameOf(id, Core.keyOf(S, id)))}</b> ${Core.lvOf(Core.keyOf(S, id), p.step)}단계 — ${esc(s.n)}<span class="k">목표 ${p.target}${unitTxt(s.u, s.side)} · 쉬는 시간 ${p.rest}초</span></span></div></li>`; }).join('')}</ul>
+    <p class="dim">운동 결과에 따라 저절로 바뀌어요.</p></div>
   <div class="card"><h2>운동 설명 — 단계별 그림</h2><p class="dim">운동을 펼치면 쉬운 단계부터 그림이 나와요. 누르면 하는 법·자세 포인트를 볼 수 있어요.</p>
     ${['A', 'B'].map(t => `<p style="margin:4px 0 0"><span class="badge">${t}데이</span></p>` + Core.PLAN[t].map(id => { const e = Core.EX[id], p = !e.dbOnly || S.settings.db ? Core.progOf(S, id) : null, mine = p ? Core.stepsOf(S, id)[p.step].n : null;
       const ck = Core.keyOf(S, id), rows = [...e.steps.map((x, i) => [x, `${e.dbOnly ? '덤벨 ' : ''}${i - Core.lowOf(id) + 1}단계`, id, i]).filter(r => r[3] >= Core.lowOf(id)), ...(e.dbSteps || []).map((x, i) => [x, `덤벨 ${i + 1}단계`, id + '_db']), ...(id === 'push' ? [[{ n:'무릎 푸시업' }, '대체', id]] : [])];
       return `<details><summary>${esc(e.name)}${e.dbName ? ` / ${esc(e.dbName)}` : ''} <span class="dim">· ${esc(e.kind)}${e.dbOnly ? ' · 덤벨 있을 때만' : ''}</span></summary><div class="steps">${rows.map(([x, lb, kk]) => `<button class="stepc${x.n === mine && kk === ck ? ' mine' : ''}" data-act="how" data-name="${esc(x.n)}" data-id="${id}" data-key="${kk}"><span class="sl">${lb}${x.n === mine && kk === ck ? ' · 지금 내 단계' : ''}</span><b>${esc(x.n)}</b>${figHtml(x.n, true)}</button>`).join('')}</div></details>`; }).join('')).join('')}</div>
   <div class="card"><h2>규칙</h2><ol class="list rules" style="padding-left:20px;list-style:decimal">
-    <li><b>주 3회, A·B 번갈아 · 하루 5동작 × 5세트</b><br><span class="k">A = 스쿼트·푸시업·로우·브릿지·플랭크 / B = 스플릿 스쿼트·힌지·풀다운(덤벨만 켜면 벤트오버 로우)·파이크 푸시업·사이드 플랭크. 동작 수를 줄이고 세트를 늘려 같은 동작에 빨리 익숙해져요. 쉬는 시간·준비·마무리 포함 예상 약 45~65분(단계가 오를수록 길어져요). 처음 1~2주 5세트가 벅차면 쉬는 시간을 60초로 늘려요</span></li>
-    <li><b>5세트 다 채우면 다음엔 +2회(버티기 +5초)</b><br><span class="k">목표가 최대(동작에 따라 10·15·20·25회)인 날 다 채우면 다음 단계 동작으로, 그 단계의 최소 목표부터</span></li>
-    <li><b>3번 연속 못 채우면 목표를 낮춰요</b><br><span class="k">이미 최소면 이전 단계로</span></li>
+    <li><b>주 3회, A·B 번갈아 · 하루 5동작 × 5세트</b><br><span class="k">A = 스쿼트·푸시업·로우·브릿지·플랭크 / B = 스플릿 스쿼트·힌지·풀다운(덤벨만 켜면 벤트오버 로우)·파이크 푸시업·사이드 플랭크. 동작 수를 줄이고 세트를 늘려 같은 동작에 빨리 익숙해져요. 예상 시간은 오늘 운동 화면에 나와요</span></li>
+    <li><b>5세트 다 채우면 저절로 어려워져요</b><br><span class="k">① 다음엔 목표 +2회(버티기 +5초) → ② 목표가 최대(동작에 따라 10·15·20·25회)가 되면 쉬는 시간을 60→45→30초로 줄여요 → ③ 30초에서도 다 채우면 다음 단계 동작으로(최소 목표, 쉬는 시간 60초부터). 마지막 단계면 그대로 유지</span></li>
+    <li><b>3번 연속 못 채우면 쉬워져요</b><br><span class="k">쉬는 시간부터 15초 늘리고(최대 60초), 이미 60초면 목표를 낮춰요. 이미 최소면 이전 단계로</span></li>
     <li><b>[아파요] = 그 동작 한 단계 내림</b><br><span class="k">관절이나 날카로운 통증이면 그날은 멈춰요</span></li>
-    <li><b>휴식은 자동 ${Core.restOf(S)}초</b><br><span class="k">위 설정에서 30·45·60·90초 중 고르기 · 힘들면 [한 번 더 쉬기] · 7일 이상 쉬면 목표를 낮춰 시작할지 물어봐요</span></li>
+    <li><b>휴식 타이머는 자동</b><br><span class="k">동작마다 쉬는 시간이 달라요(위 '내 단계'에서 확인) · 힘들면 [한 번 더 쉬기] · 7일 이상 쉬면 목표를 낮추고 쉬는 시간을 60초로 돌려 시작할지 물어봐요</span></li>
     <li><b>점프 동작은 없어요</b><br><span class="k">층간소음·초보 관절을 생각해서 빼고, 식탁 매달리기·의자 딥도 넣지 않았어요</span></li></ol>
     <p class="dim">근거: WHO 2020(주 2일 이상 근력운동), ACSM 2009(초보 8~12회), Schoenfeld 2017(가벼운 부하도 실패까지 하면 근육 성장), Roberts 2020(남녀 반응 비슷). 경고 문구는 의료진 검토를 권해요.</p></div>
   <details class="card"><summary>관리</summary>
@@ -1129,21 +1135,12 @@ document.addEventListener('click', e => {
     case 'undo': if (Core.undo(S, now)) { save(); notice = '방금 누른 것을 취소했어요.'; } else notice = '취소할 것이 없어요.'; return render();
     case 'endNow': return ask('오늘은 여기까지 하고 저장할까요? 다 못 한 동작은 목표가 그대로예요.', () => { const h = Core.endNow(S, Date.now()); save(); notice = h ? '✅ 오늘 운동 끝!' : ''; forceNext = false; render(); }, '저장하고 끝내기');
     case 'cancel': return ask('오늘 운동을 기록 없이 지울까요?', () => { Core.cancel(S); save(); notice = '오늘 운동을 지웠어요.'; render(); }, '지우기');
-    case 'layoffYes': { const ch = Core.layoffEase(S, today()); save(); notice = ch && ch.length ? '✅ 목표를 조금 낮췄어요. 천천히 다시 올려요.' : '이미 가장 쉬운 목표라 그대로예요.'; return render(); }
+    case 'layoffYes': { const ch = Core.layoffEase(S, today()); save(); notice = ch && ch.length ? '✅ 목표·쉬는 시간을 조금 쉽게 돌렸어요. 천천히 다시 올려요.' : '이미 가장 쉬운 목표라 그대로예요.'; return render(); }
     case 'layoffNo': S.layoffAt = S.history.at(-1)?.date || null; save(); return render();
     case 'setDb': { const on = b.dataset.db === '1'; if (S.settings.db === on) return; if (!Core.setDb(S, on)) { notice = '운동 중에는 바꿀 수 없어요.'; return render(); } save();
-      notice = S.settings.db ? '✅ 덤벨 동작으로 바꿨어요. 처음 하는 덤벨 동작은 1단계부터 — 쉬우면 [어렵게], 무거우면 [쉽게]로 맞춰요.' : '맨몸 동작으로 돌아왔어요(맨몸 기록은 그대로예요).'; return render(); }
-    case 'rest': if (S.session) { notice = '운동 중에는 바꿀 수 없어요.'; return render(); } if (Core.setRest(S, Number(b.dataset.sec))) { save(); notice = `✅ 쉬는 시간 ${b.dataset.sec}초로 바꿨어요.`; } return render();
-    case 'toggleLoud': loud = !loud; try { localStorage.setItem(KEY + '_loud', loud ? '1' : '0'); } catch {} aState = 'none'; unlockAudio(); notice = loud ? '✅ 켰어요 — 아래 [🔔 소리 시험]으로 들리는지 확인해 보세요.' : '껐어요 — 벨소리 스위치가 무음이면 소리가 안 나요(음악과 같이 들을 때 좋아요).'; return render();
+      notice = S.settings.db ? '✅ 덤벨 동작으로 바꿨어요. 처음 하는 덤벨 동작은 1단계부터 — 결과에 따라 저절로 올라가요.' : '맨몸 동작으로 돌아왔어요(맨몸 기록은 그대로예요).'; return render(); }
     case 'testBeep': if (muted) { notice = '위쪽 🔇 소리 끔을 눌러 소리를 켜 주세요.'; return render(); } setTimeout(beep, 150); return;
-    case 'toggleBand': if (S.session) { notice = '운동 중에는 바꿀 수 없어요.'; return render(); } S.settings.band = !S.settings.band; save(); return render();
-    case 'togglePreg': if (S.session) { notice = '운동 중에는 바꿀 수 없어요.'; return render(); } S.settings.preg = !S.settings.preg; save(); render();
-      if (S.settings.preg) ask('쉬운 단계(1단계·최소 목표)부터 다시 시작할까요? (권장)', () => { for (const id of [...Core.PLAN.A, ...Core.PLAN.B]) { if (!Core.EX[id].dbOnly || S.settings.db) Core.progOf(S, id); } for (const [k, p] of Object.entries(S.prog)) { p.step = 0; p.target = Core.stepsByKey(k)[0].min; p.fails = 0; } save(); notice = '✅ 모든 동작을 1단계부터 시작해요.'; render(); }, '1단계부터');
-      return;
-    case 'stepUp': case 'stepDown': if (!Core.setStep(S, b.dataset.id, act === 'stepUp' ? 1 : -1)) notice = S.session ? '운동 중에는 바꿀 수 없어요.' : '더 바꿀 단계가 없어요.'; else { save(); notice = ''; } return render();
     case 'how': return showHow(b.dataset.name, b.dataset.id, b.dataset.key);
-    case 'level': { const L = Core.LEVELS[b.dataset.lv]; if (!L) return; if (S.session) { notice = '운동 중에는 바꿀 수 없어요.'; return render(); } if (S.settings.preg) return;
-      return ask(`모든 동작을 '${L.name}' 수준(${L.desc}, 쉬는 시간 ${L.rest}초)으로 맞출까요? 지금보다 쉬운 단계로 내려가는 동작도 있을 수 있어요. 각 동작은 그 단계의 최소 목표부터 시작하고, 지난 기록은 그대로예요.`, () => { if (Core.setLevel(S, b.dataset.lv)) { save(); notice = `✅ '${L.name}' 수준으로 맞췄어요. 동작마다 [쉽게]/[어렵게]로 더 조정할 수 있어요.`; } render(); }, '맞추기'); }
     case 'export': return showBackup();
     case 'exportBroken': { let raw = brokenRaw; if (!raw) { const k = brokenKeys().sort().at(-1); try { raw = k ? localStorage.getItem(k) : null; } catch {} } return raw ? showBackup(raw) : render(); }
     case 'import': return showImport();
