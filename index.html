@@ -1035,24 +1035,10 @@ function viewWorkout() {
   return html;
 }
 function viewEtc() {
-  const unit = id => (Core.EX[id].u === 'r' ? '회' : '초');
   const mine = id => { const p = Core.progOf(S, id), e = Core.EX[id];
     return `<li><b>${esc(e.name)}</b> <span class="dim">${p.st + 1}/${e.stages.length}칸</span><br><span class="k">${esc(stageTxt(id, p.st))} · 목표 ${p.target}${unitTxt(e.u, e.side)} × ${e.sets}세트 · 쉬는 ${Core.restAt(id, p.ri)}초</span></li>`; };
-  const ladder = id => { const e = Core.EX[id], names = [...new Set(e.stages.map(g => g.n))];
-    return `<details><summary><span>${esc(e.name)} <span class="dim">· ${esc(e.kind)} · ${e.sets}세트</span></span></summary>
-      <ol class="list rules" style="padding-left:20px;list-style:decimal;margin-top:6px">${e.stages.map(g => `<li>${esc(g.n)}${g.w ? ` · ${esc(g.w)}` : ''} — ${g.from}${unit(id)}부터 ${e.max}${unit(id)}까지${g.note ? ` <span class="dim">(${esc(g.note)})</span>` : ''}</li>`).join('')}</ol>
-      <p class="dim" style="margin:4px 0">칸마다 쉬는 시간 ${e.rests[0]}초 → ${e.rests.at(-1)}초${e.rests.length > 3 ? '(5초씩)' : ''}까지 줄인 뒤 다음 칸으로.</p>
-      <div class="steps">${names.map(n => `<button class="stepc" data-act="how" data-name="${esc(n)}" data-id="${id}"><b>${esc(n)}</b>${figHtml(n, true)}</button>`).join('')}</div></details>`; };
   return `<div class="card"><h2>내 운동</h2>${['A', 'B'].map(t => `<p style="margin:6px 0 0"><span class="badge">${t}데이</span></p><ul class="list">${Core.PLAN[t].map(mine).join('')}</ul>`).join('')}
     <p class="dim">운동 결과에 따라 저절로 바뀌어요. 버피는 A·B 둘 다 마지막에 해요.</p></div>
-  <div class="card"><h2>운동 설명 — 칸별 무게·그림</h2>${Object.keys(Core.EX).map(ladder).join('')}</div>
-  <div class="card"><h2>규칙</h2><ol class="list rules" style="padding-left:20px;list-style:decimal">
-    <li><b>주 3회, A·B 번갈아</b><br><span class="k">A = 고블릿 스쿼트·푸시업·한 팔 로우·버피 / B = 루마니안 데드리프트·숄더 프레스·플랭크·사이드 플랭크·버피</span></li>
-    <li><b>모든 세트를 채우면 저절로 어려워져요</b><br><span class="k">① 목표 +2회(버피 +1회, 버티기 +5초) → ② 최대(20회·버피 15회·버티기 60초)가 되면 쉬는 시간을 한 칸씩 줄이고 → ③ 끝까지 줄이면 다음 무게(맨몸 동작은 다음 자세)로, 그 칸의 시작 횟수부터</span></li>
-    <li><b>무게가 오를 땐 덤벨을 준비해요</b><br><span class="k">동작마다 오르는 무게는 위 [운동 설명 — 칸별 무게]에서 볼 수 있어요. 다음 무게는 그날 결과 화면에 미리 알려 줘요</span></li>
-    <li><b>3번 연속 못 채우면 한 칸 내려가요</b><br><span class="k">쉬는 시간을 한 칸 늘리고 → 이미 처음이면 목표를 낮추고 → 이미 시작 횟수면 이전 무게(자세)로. 관절이 아프거나 날카로운 통증이면 그날은 멈춰요</span></li>
-    <li><b>휴식 타이머는 자동</b><br><span class="k">힘들면 [한 번 더 쉬기] · 7일 이상 쉬면 목표를 낮춰 시작할지 물어봐요</span></li>
-    <li><b>점프는 없어요</b><br><span class="k">버피도 한 발씩 뒤로 걸어 나가요(층간소음·관절)</span></li></ol></div>
   <details class="card"><summary>관리</summary>
     <p class="dim" style="margin-top:8px">지금 여는 곳: <b>${whereTxt()}</b> · 기록은 이 폰의 이 화면에 저장되고, 저장할 때마다 자동 백업(사본 여러 벌)도 남겨요. 홈 화면 아이콘으로 쓰면 가장 안전해요. 사파리·claude.ai 링크에서 쓰던 기록은 아이콘 앱으로 저절로 옮겨지지 않아요(백업 복사 → 가져오기로 옮겨요).</p>
     <div class="row" style="margin-top:8px"><button data-act="export">백업 복사</button><button data-act="import">백업 가져오기</button>${brokenKeys().length || brokenRaw ? '<button data-act="exportBroken">못 읽은 기록 복사</button>' : ''}${LS.get(OLD) ? '<button data-act="exportOld">예전 앱 기록 원본 복사</button>' : ''}<button data-act="exportRescue">남은 자동 백업 복사</button></div>
